@@ -1,0 +1,60 @@
+{
+  "rules": [
+    {
+      "name": "Project Structure",
+      "patterns": ["package.json", "vite.config.js", "electron.vite.config.js", "src/**/*"],
+      "purpose": "Structure de base du projet Electron avec Vite",
+      "triggers": ["setup", "structure", "config"]
+    },
+    {
+      "name": "Electron Main Process",
+      "patterns": ["src/main/**/*.js", "src/main/**/*.ts"],
+      "purpose": "Logique principale de l'application Electron",
+      "triggers": ["ipc", "main-process", "app-lifecycle"]
+    },
+    {
+      "name": "Discord RPC Integration",
+      "patterns": ["src/main/discord-rpc.js", "src/main/discord-rpc.ts"],
+      "purpose": "Intégration de la Rich Presence Discord",
+      "triggers": ["discord", "rpc", "presence"],
+      "content": [
+        "Utiliser discord-rpc@^4.0.1",
+        "Configurer clientId via .env",
+        "Implémenter setActivity avec les détails personnalisés"
+      ]
+    },
+    {
+      "name": "Electron Renderer",
+      "patterns": ["src/renderer/**/*.js", "src/renderer/**/*.ts", "src/renderer/**/*.vue"],
+      "purpose": "Interface utilisateur de l'application",
+      "triggers": ["ui", "form", "settings"]
+    },
+    {
+      "name": "Vite Configuration",
+      "patterns": ["vite.config.js", "electron.vite.config.js"],
+      "purpose": "Configuration de Vite pour Electron",
+      "triggers": ["vite", "build", "dev"]
+    }
+  ],
+  "electronConfig": {
+    "nodeIntegration": true,
+    "contextIsolation": false
+  },
+  "aiInstructions": {
+    "electronBestPractices": [
+      "Utiliser IPC pour la communication entre les processus",
+      "Gérer correctement les événements du cycle de vie de l'application",
+      "Implémenter la gestion des erreurs et le logging"
+    ],
+    "discordRpcTips": [
+      "Limiter les mises à jour de la présence à un intervalle raisonnable",
+      "Gérer les erreurs de connexion à Discord",
+      "Permettre à l'utilisateur de personnaliser tous les champs de la Rich Presence"
+    ],
+    "viteOptimization": [
+      "Utiliser le mode HMR pour un développement rapide",
+      "Configurer correctement les alias de chemin",
+      "Optimiser les builds pour la production"
+    ]
+  }
+}

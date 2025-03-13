@@ -1,33 +1,49 @@
 {
   "name": "richify",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "0.2.0",
+  "description": "Application permettant de personnaliser la Rich Presence Discord pour n'importe quelle application",
+  "type": "commonjs",
   "scripts": {
-    "dev": "vite",
+    "clean": "rimraf dist-electron node_modules",
+    "dev": "vite build && electron .",
     "build": "tsc && vite build && electron-builder",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^6.4.7",
+    "@mui/material": "^6.4.7",
+    "discord-rpc": "^4.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@babel/plugin-transform-react-jsx": "^7.25.9",
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
+    "@tailwindcss/postcss": "^4.0.14",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.19",
+    "electron": "^30.0.1",
+    "electron-builder": "^24.13.3",
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "postcss": "^8.4.38",
+    "rimraf": "^5.0.5",
+    "tailwindcss": "^3.4.1",
     "typescript": "^5.2.2",
     "vite": "^5.1.6",
-    "electron": "^30.0.1",
-    "electron-builder": "^24.13.3",
+    "vite-plugin-commonjs": "^0.10.4",
     "vite-plugin-electron": "^0.28.6",
-    "vite-plugin-electron-renderer": "^0.14.5"
+    "vite-plugin-electron-renderer": "^0.14.6"
   },
   "main": "dist-electron/main.js"
 }

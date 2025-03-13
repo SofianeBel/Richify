@@ -1,0 +1,22 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Ce projet est une application Electron utilisant Vite et React pour créer un outil de personnalisation de Discord Rich Presence.
+
+Utilisez les technologies suivantes :
+- Electron pour l'application de bureau
+- Vite comme outil de build
+- React pour l'interface utilisateur
+- Node.js pour l'environnement d'exécution
+- electron-vite pour l'intégration Electron-Vite
+
+Structure des fichiers :
+- src/main : Code principal Electron
+- src/renderer : Code React pour l'interface utilisateur
+- src/preload : Script de préchargement Electron
+
+Suivez les meilleures pratiques pour le développement Electron et React.
+Utilisez des hooks React et des composants fonctionnels.
+Implémentez une architecture modulaire et maintenable.
