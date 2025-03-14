@@ -17,6 +17,8 @@ Structure des fichiers :
 - src/renderer : Code React pour l'interface utilisateur
 - src/preload : Script de préchargement Electron
 
+de plus n'oublie pas de changer la version du projet dans le format :XX.XX.XX
+
 Suivez les meilleures pratiques pour le développement Electron et React.
 Utilisez des hooks React et des composants fonctionnels.
 Implémentez une architecture modulaire et maintenable.
