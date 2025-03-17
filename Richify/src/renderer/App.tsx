@@ -73,7 +73,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [applications, setApplications] = useState<Array<{ id: string, name: string }>>([]);
-  const [selectedApp, setSelectedApp] = useState('');
+  const [selectedApp, setSelectedApp] = useState<string>('default');
   const [presence, setPresence] = useState({
     details: '',
     state: '',
@@ -194,9 +194,13 @@ function App() {
                     onChange={handleAppSelect}
                     label="Application"
                     disabled={isLoading}
+                    displayEmpty
                   >
+                    <MenuItem key="default" value="default" disabled>
+                      <em>Sélectionnez une application</em>
+                    </MenuItem>
                     {applications.map((app) => (
-                      <MenuItem key={app.id} value={app.id}>
+                      <MenuItem key={`app-${app.id}`} value={app.id}>
                         {app.name}
                       </MenuItem>
                     ))}
