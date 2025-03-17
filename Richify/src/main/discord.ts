@@ -1,5 +1,21 @@
 import { Client } from 'discord-rpc';
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, IpcMainEvent } from 'electron';
+
+interface PresenceData {
+  details?: string;
+  state?: string;
+  largeImageKey?: string;
+  largeImageText?: string;
+  smallImageKey?: string;
+  smallImageText?: string;
+  button1Label?: string;
+  button1Url?: string;
+  button2Label?: string;
+  button2Url?: string;
+  startTimestamp?: boolean;
+  applicationId?: string;
+  applicationName?: string;
+}
 
 class DiscordManager {
   private client: Client | null = null;
@@ -7,9 +23,12 @@ class DiscordManager {
   private mainWindow: BrowserWindow | null = null;
   private connected: boolean = false;
   private currentActivity: any = null;
+  private startTime: number;
+  private currentPresence: PresenceData | null = null;
 
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
+    this.startTime = Date.now();
   }
 
   async initialize(clientId: string): Promise<void> {
@@ -47,24 +66,60 @@ class DiscordManager {
     }
   }
 
-  async updatePresence(details: string, state: string, largeImageKey?: string, largeImageText?: string): Promise<void> {
+  async updatePresence(data: PresenceData): Promise<void> {
     if (!this.client || !this.connected) {
       throw new Error('Discord client not connected');
     }
 
     try {
-      const activity = {
-        details,
-        state,
-        largeImageKey: largeImageKey || 'default',
-        largeImageText: largeImageText || details,
-        startTimestamp: Date.now(),
-        instance: false,
+      this.currentPresence = data;
+
+      const presence: any = {
+        details: data.details || 'No details',
+        state: data.state || 'No state',
       };
 
-      await this.client.setActivity(activity);
-      this.currentActivity = activity;
-      console.log('Presence updated:', activity);
+      // Ajouter le timestamp si activé
+      if (data.startTimestamp) {
+        presence.startTimestamp = this.startTime;
+      }
+
+      // Ajouter les images si spécifiées
+      if (data.largeImageKey) {
+        presence.largeImageKey = data.largeImageKey;
+        if (data.largeImageText) {
+          presence.largeImageText = data.largeImageText;
+        }
+      }
+
+      if (data.smallImageKey) {
+        presence.smallImageKey = data.smallImageKey;
+        if (data.smallImageText) {
+          presence.smallImageText = data.smallImageText;
+        }
+      }
+
+      // Ajouter les boutons si spécifiés
+      const buttons = [];
+      if (data.button1Label && data.button1Url) {
+        buttons.push({
+          label: data.button1Label,
+          url: data.button1Url
+        });
+      }
+      if (data.button2Label && data.button2Url) {
+        buttons.push({
+          label: data.button2Label,
+          url: data.button2Url
+        });
+      }
+      if (buttons.length > 0) {
+        presence.buttons = buttons;
+      }
+
+      await this.client.setActivity(presence);
+      this.currentActivity = presence;
+      console.log('Updated Discord presence:', presence);
     } catch (error) {
       console.error('Failed to update presence:', error);
       throw error;
@@ -94,6 +149,21 @@ class DiscordManager {
   getCurrentActivity() {
     return this.currentActivity;
   }
+
+  getCurrentPresence(): PresenceData | null {
+    return this.currentPresence;
+  }
+}
+
+// Gestionnaire d'événements pour l'IPC
+export function setupDiscordIPC(ipcMain: Electron.IpcMain, discordManager: DiscordManager): void {
+  ipcMain.on('UPDATE_PRESENCE', async (_event: IpcMainEvent, data: PresenceData) => {
+    try {
+      await discordManager.updatePresence(data);
+    } catch (error) {
+      console.error('Error updating presence:', error);
+    }
+  });
 }
 
 export default DiscordManager; 

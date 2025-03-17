@@ -32,6 +32,7 @@ import { ThemeProvider, useThemeMode } from './theme/ThemeProvider';
 import ErrorDisplay from './components/ErrorDisplay';
 import Tutorial from './components/Tutorial';
 import Settings from './components/Settings';
+import PresenceCustomization from './components/PresenceCustomization';
 
 // Interface pour les données reçues de l'IPC
 interface IpcApplication {
@@ -115,6 +116,16 @@ function AppContent() {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdatePresence = (presenceData: any) => {
+    if (selectedApp) {
+      window.electron.ipcRenderer.send('UPDATE_PRESENCE', {
+        ...presenceData,
+        applicationId: selectedApp.processId,
+        applicationName: selectedApp.name
+      });
     }
   };
 
@@ -231,6 +242,13 @@ function AppContent() {
                   )}
                 </CardContent>
               </Card>
+            </Grid>
+
+            <Grid item xs={12}>
+              <PresenceCustomization
+                selectedApp={selectedApp}
+                onUpdatePresence={handleUpdatePresence}
+              />
             </Grid>
           </Grid>
         </Container>
