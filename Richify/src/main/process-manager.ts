@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 interface ProcessInfo {
+  id: string;
   name: string;
   path: string;
   icon?: string;
@@ -12,7 +13,8 @@ interface ProcessInfo {
 class ProcessManager {
   private cachedProcesses: ProcessInfo[] | null = null;
   private lastCacheTime: number = 0;
-  private readonly CACHE_DURATION = 30000; // 30 secondes
+  private readonly CACHE_DURATION = 5000; // 5 secondes
+  private selectedApp: ProcessInfo | null = null;
 
   constructor() {
     this.setupEventHandlers();
@@ -27,6 +29,12 @@ class ProcessManager {
         console.error('Erreur lors de la récupération des applications:', error);
         return { success: false, error: 'Impossible de récupérer la liste des applications' };
       }
+    });
+
+    ipcMain.on('SELECT_APPLICATION', (_, appId: string) => {
+      const apps = this.cachedProcesses || [];
+      this.selectedApp = apps.find(app => app.id === appId) || null;
+      console.log('Application sélectionnée:', this.selectedApp?.name);
     });
 
     ipcMain.handle('GET_APP_ICON', async (_, appPath: string) => {
@@ -47,7 +55,8 @@ class ProcessManager {
     }
 
     const processes = await this.getProcessList();
-    const apps = processes.map(process => ({
+    const apps = processes.map((process, index) => ({
+      id: `${this.getAppName(process)}-${index}`,
       name: this.getAppName(process),
       path: process,
       icon: this.getAppIcon(process)
