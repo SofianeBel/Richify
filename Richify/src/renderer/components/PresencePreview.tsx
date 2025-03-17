@@ -1,5 +1,5 @@
 import { Box, Card, CardContent, Typography, Avatar, Button, styled } from '@mui/material';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistance } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const PreviewCard = styled(Card)(({ theme }) => ({
@@ -62,7 +62,7 @@ export default function PresencePreview({
         <Box display="flex" alignItems="center" mb={2}>
           <Avatar
             alt="Discord Avatar"
-            src="/discord-avatar-placeholder.png"
+            src="./assets/images/discord-avatar.png"
             sx={{ width: 32, height: 32, mr: 1 }}
           />
           <DiscordUsername variant="subtitle1">
@@ -75,13 +75,13 @@ export default function PresencePreview({
             <Box position="relative" mr={2}>
               <Avatar
                 alt={largeImageText || 'Large Image'}
-                src={`/assets/images/${largeImageKey}.png`}
+                src={`./assets/images/${largeImageKey}.png`}
                 sx={{ width: 60, height: 60 }}
               />
               {smallImageKey && (
                 <Avatar
                   alt={smallImageText || 'Small Image'}
-                  src={`/assets/images/${smallImageKey}.png`}
+                  src={`./assets/images/${smallImageKey}.png`}
                   sx={{
                     width: 20,
                     height: 20,
@@ -107,7 +107,7 @@ export default function PresencePreview({
             )}
             {startTimestamp && (
               <PresenceText variant="caption" color="textSecondary">
-                {formatDistanceToNow(startTime, { addSuffix: true, locale: fr })}
+                {formatDistance(startTime, new Date(), { addSuffix: true, locale: fr })}
               </PresenceText>
             )}
           </Box>

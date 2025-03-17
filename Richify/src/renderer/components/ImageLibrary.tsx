@@ -31,9 +31,9 @@ interface ImageLibraryProps {
 
 // Simule une base de données d'images
 const defaultImages: Image[] = [
-  { key: 'discord', url: '/assets/images/discord.png', name: 'Discord', category: 'Apps' },
-  { key: 'game', url: '/assets/images/game.png', name: 'Game', category: 'Games' },
-  { key: 'music', url: '/assets/images/music.png', name: 'Music', category: 'Media' },
+  { key: 'discord', url: './assets/images/discord.png', name: 'Discord', category: 'Apps' },
+  { key: 'game', url: './assets/images/game.png', name: 'Game', category: 'Games' },
+  { key: 'music', url: './assets/images/music.png', name: 'Music', category: 'Media' },
   // Ajoutez plus d'images par défaut ici
 ];
 

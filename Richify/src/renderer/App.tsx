@@ -18,7 +18,8 @@ import {
   Switch,
   Tooltip,
   Button,
-  CircularProgress
+  CircularProgress,
+  Fab
 } from '@mui/material';
 import {
   Brightness4 as DarkIcon,
@@ -26,13 +27,17 @@ import {
   Help as HelpIcon,
   Apps as AppsIcon,
   Settings as SettingsIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Save as SaveIcon
 } from '@mui/icons-material';
 import { ThemeProvider, useThemeMode } from './theme/ThemeProvider';
 import ErrorDisplay from './components/ErrorDisplay';
 import Tutorial from './components/Tutorial';
 import Settings from './components/Settings';
 import PresenceCustomization from './components/PresenceCustomization';
+import PresencePreview from './components/PresencePreview';
+import ImageLibrary from './components/ImageLibrary';
+import ProfileManager from './components/ProfileManager';
 
 // Interface pour les données reçues de l'IPC
 interface IpcApplication {
@@ -54,8 +59,23 @@ function AppContent() {
   const [error, setError] = useState<string | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showImageLibrary, setShowImageLibrary] = useState<'large' | 'small' | null>(null);
+  const [showProfileManager, setShowProfileManager] = useState(false);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [discordConnected, setDiscordConnected] = useState(false);
+  const [presenceConfig, setPresenceConfig] = useState({
+    details: '',
+    state: '',
+    largeImageKey: '',
+    largeImageText: '',
+    smallImageKey: '',
+    smallImageText: '',
+    button1Label: '',
+    button1Url: '',
+    button2Label: '',
+    button2Url: '',
+    startTimestamp: true
+  });
 
   const initializeDiscord = async () => {
     try {
@@ -129,6 +149,20 @@ function AppContent() {
     }
   };
 
+  const handleImageSelect = (imageKey: string) => {
+    if (showImageLibrary === 'large') {
+      setPresenceConfig(prev => ({ ...prev, largeImageKey: imageKey }));
+    } else if (showImageLibrary === 'small') {
+      setPresenceConfig(prev => ({ ...prev, smallImageKey: imageKey }));
+    }
+    setShowImageLibrary(null);
+  };
+
+  const handleProfileSelect = (profile: any) => {
+    setPresenceConfig(profile.config);
+    setShowProfileManager(false);
+  };
+
   useEffect(() => {
     fetchApplications();
     // Vérifier si c'est la première utilisation
@@ -195,7 +229,7 @@ function AppContent() {
       >
         <Container maxWidth="lg">
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid item xs={12} md={8}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -242,13 +276,34 @@ function AppContent() {
                   )}
                 </CardContent>
               </Card>
+
+              {selectedApp && (
+                <PresenceCustomization
+                  selectedApp={selectedApp}
+                  config={presenceConfig}
+                  onConfigChange={setPresenceConfig}
+                  onOpenImageLibrary={setShowImageLibrary}
+                />
+              )}
             </Grid>
 
-            <Grid item xs={12}>
-              <PresenceCustomization
-                selectedApp={selectedApp}
-                onUpdatePresence={handleUpdatePresence}
-              />
+            <Grid item xs={12} md={4}>
+              <Box sx={{ position: 'sticky', top: 90 }}>
+                <PresencePreview {...presenceConfig} />
+                
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
+                  <Tooltip title="Sauvegarder comme profil">
+                    <Fab
+                      color="primary"
+                      size="small"
+                      onClick={() => setShowProfileManager(true)}
+                      disabled={!selectedApp}
+                    >
+                      <SaveIcon />
+                    </Fab>
+                  </Tooltip>
+                </Box>
+              </Box>
             </Grid>
           </Grid>
         </Container>
@@ -269,6 +324,21 @@ function AppContent() {
       <Settings
         open={showSettings}
         onClose={() => setShowSettings(false)}
+      />
+
+      <ImageLibrary
+        open={!!showImageLibrary}
+        onClose={() => setShowImageLibrary(null)}
+        onSelect={handleImageSelect}
+        type={showImageLibrary || 'large'}
+      />
+
+      <ProfileManager
+        open={showProfileManager}
+        onClose={() => setShowProfileManager(false)}
+        onSelectProfile={handleProfileSelect}
+        currentConfig={presenceConfig}
+        currentApplication={selectedApp}
       />
     </>
   );

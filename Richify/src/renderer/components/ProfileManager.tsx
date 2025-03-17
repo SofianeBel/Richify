@@ -145,8 +145,8 @@ export default function ProfileManager({
           {profiles.map((profile) => (
             <ListItem
               key={profile.id}
-              button
               onClick={() => onSelectProfile(profile)}
+              sx={{ cursor: 'pointer' }}
             >
               <ListItemText
                 primary={profile.name}
@@ -155,14 +155,20 @@ export default function ProfileManager({
               <ListItemSecondaryAction>
                 <IconButton
                   edge="end"
-                  onClick={() => handleEditProfile(profile)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditProfile(profile);
+                  }}
                   sx={{ mr: 1 }}
                 >
                   <EditIcon />
                 </IconButton>
                 <IconButton
                   edge="end"
-                  onClick={() => handleDeleteProfile(profile.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteProfile(profile.id);
+                  }}
                 >
                   <DeleteIcon />
                 </IconButton>
