@@ -54,6 +54,46 @@ function AppContent() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [discordConnected, setDiscordConnected] = useState(false);
+
+  const initializeDiscord = async () => {
+    try {
+      const clientId = localStorage.getItem('discordClientId');
+      if (!clientId) {
+        setError('Client ID Discord non configuré. Veuillez le configurer dans les paramètres.');
+        setShowSettings(true);
+        return;
+      }
+
+      const response = await window.electron.ipcRenderer.invoke('INITIALIZE_DISCORD', clientId);
+      if (!response.success) {
+        throw new Error(response.error || 'Échec de la connexion à Discord');
+      }
+      setDiscordConnected(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur de connexion à Discord');
+    }
+  };
+
+  const handleAppSelect = async (app: Application) => {
+    try {
+      if (!discordConnected) {
+        await initializeDiscord();
+      }
+
+      setSelectedApp(app === selectedApp ? null : app);
+      
+      if (app !== selectedApp) {
+        // Envoyer les informations de l'application à Discord
+        window.electron.ipcRenderer.send('SELECT_APPLICATION', app);
+      } else {
+        // Déconnecter Discord si aucune application n'est sélectionnée
+        window.electron.ipcRenderer.send('DISCONNECT_RPC');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors de la mise à jour de Discord');
+    }
+  };
 
   const fetchApplications = async () => {
     try {
@@ -86,11 +126,25 @@ function AppContent() {
       setShowTutorial(true);
       localStorage.setItem('hasSeenTutorial', 'true');
     }
-  }, []);
 
-  const handleAppSelect = (app: Application) => {
-    setSelectedApp(app === selectedApp ? null : app);
-  };
+    // Écouter les événements Discord
+    const handleDiscordConnected = () => setDiscordConnected(true);
+    const handleDiscordDisconnected = () => setDiscordConnected(false);
+    const handleDiscordError = (error: any) => {
+      setError(`Erreur Discord: ${error.message || 'Erreur inconnue'}`);
+      setDiscordConnected(false);
+    };
+
+    window.electron.ipcRenderer.on('DISCORD_CONNECTED', handleDiscordConnected);
+    window.electron.ipcRenderer.on('DISCORD_DISCONNECTED', handleDiscordDisconnected);
+    window.electron.ipcRenderer.on('DISCORD_ERROR', handleDiscordError);
+
+    return () => {
+      window.electron.ipcRenderer.removeListener('DISCORD_CONNECTED', handleDiscordConnected);
+      window.electron.ipcRenderer.removeListener('DISCORD_DISCONNECTED', handleDiscordDisconnected);
+      window.electron.ipcRenderer.removeListener('DISCORD_ERROR', handleDiscordError);
+    };
+  }, []);
 
   return (
     <>

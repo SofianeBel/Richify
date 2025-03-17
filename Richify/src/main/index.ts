@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import DiscordManager from './discord';
 
 const execAsync = promisify(exec);
 
@@ -20,6 +21,8 @@ process.env.DIST = join(__dirname, '../..');
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : join(process.env.DIST, '../public');
 
 let win: BrowserWindow | null = null;
+let discordManager: DiscordManager | null = null;
+
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 
@@ -75,6 +78,9 @@ function createWindow() {
       sandbox: false
     },
   });
+
+  // Initialiser le gestionnaire Discord
+  discordManager = new DiscordManager(win);
 
   // Enable DevTools in development
   if (!app.isPackaged) {
@@ -141,18 +147,77 @@ ipcMain.handle('GET_RUNNING_APPS', async () => {
   }
 });
 
-ipcMain.on('SELECT_APPLICATION', (event, appId) => {
-  // TODO: Implement app selection
-  console.log('Selected app:', appId);
+ipcMain.handle('INITIALIZE_DISCORD', async (event, clientId: string) => {
+  try {
+    if (!discordManager) {
+      throw new Error('Discord manager not initialized');
+    }
+    await discordManager.initialize(clientId);
+    return { success: true };
+  } catch (error) {
+    console.error('Error initializing Discord:', error);
+    return { success: false, error: 'Failed to initialize Discord' };
+  }
 });
 
-ipcMain.on('UPDATE_PRESENCE', (event, presence) => {
-  // TODO: Implement presence update
-  console.log('Updating presence:', presence);
-  event.reply('PRESENCE_UPDATED', { success: true });
+ipcMain.on('SELECT_APPLICATION', async (event, app) => {
+  try {
+    if (!discordManager) {
+      throw new Error('Discord manager not initialized');
+    }
+
+    // Mettre à jour la présence avec les informations de l'application
+    await discordManager.updatePresence(
+      app.name, // Détails
+      `PID: ${app.processId}`, // État
+      'app', // Clé de l'image
+      app.windowTitle // Texte de l'image
+    );
+
+    event.reply('PRESENCE_UPDATED', { success: true });
+  } catch (error) {
+    console.error('Error updating presence:', error);
+    event.reply('PRESENCE_UPDATED', { 
+      success: false, 
+      error: 'Failed to update Discord presence' 
+    });
+  }
 });
 
-ipcMain.on('DISCONNECT_RPC', () => {
-  // TODO: Implement RPC disconnect
-  console.log('Disconnecting RPC');
+ipcMain.on('UPDATE_PRESENCE', async (event, presence) => {
+  try {
+    if (!discordManager) {
+      throw new Error('Discord manager not initialized');
+    }
+
+    await discordManager.updatePresence(
+      presence.details,
+      presence.state,
+      presence.largeImageKey,
+      presence.largeImageText
+    );
+
+    event.reply('PRESENCE_UPDATED', { success: true });
+  } catch (error) {
+    console.error('Error updating presence:', error);
+    event.reply('PRESENCE_UPDATED', { 
+      success: false, 
+      error: 'Failed to update Discord presence' 
+    });
+  }
+});
+
+ipcMain.on('DISCONNECT_RPC', async (event) => {
+  try {
+    if (discordManager) {
+      await discordManager.disconnect();
+    }
+    event.reply('RPC_DISCONNECTED', { success: true });
+  } catch (error) {
+    console.error('Error disconnecting RPC:', error);
+    event.reply('RPC_DISCONNECTED', { 
+      success: false, 
+      error: 'Failed to disconnect Discord RPC' 
+    });
+  }
 }); 
