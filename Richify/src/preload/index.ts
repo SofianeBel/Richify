@@ -19,7 +19,13 @@ contextBridge.exposeInMainWorld(
       on: (channel: string, func: (...args: any[]) => void) => {
         console.log('Registering listener:', channel);
         // whitelist channels
-        const validChannels = ['PRESENCE_UPDATED', 'RPC_DISCONNECTED'];
+        const validChannels = [
+          'PRESENCE_UPDATED',
+          'RPC_DISCONNECTED',
+          'DISCORD_CONNECTED',
+          'DISCORD_DISCONNECTED',
+          'DISCORD_ERROR'
+        ];
         if (validChannels.includes(channel)) {
           ipcRenderer.on(channel, (event, ...args) => {
             console.log('Received message:', channel, args);
@@ -29,7 +35,13 @@ contextBridge.exposeInMainWorld(
       },
       removeListener: (channel: string, func: (...args: any[]) => void) => {
         console.log('Removing listener:', channel);
-        const validChannels = ['PRESENCE_UPDATED', 'RPC_DISCONNECTED'];
+        const validChannels = [
+          'PRESENCE_UPDATED',
+          'RPC_DISCONNECTED',
+          'DISCORD_CONNECTED',
+          'DISCORD_DISCONNECTED',
+          'DISCORD_ERROR'
+        ];
         if (validChannels.includes(channel)) {
           ipcRenderer.removeListener(channel, func);
         }
@@ -37,7 +49,7 @@ contextBridge.exposeInMainWorld(
       invoke: (channel: string, ...args: any[]) => {
         console.log('Invoking:', channel, args);
         // whitelist channels
-        const validChannels = ['GET_RUNNING_APPS'];
+        const validChannels = ['GET_RUNNING_APPS', 'INITIALIZE_DISCORD'];
         if (validChannels.includes(channel)) {
           return ipcRenderer.invoke(channel, ...args);
         }
