@@ -1,7 +1,7 @@
 {
   "name": "richify",
   "private": true,
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Application permettant de personnaliser la Rich Presence Discord pour n'importe quelle application",
   "type": "commonjs",
   "scripts": {

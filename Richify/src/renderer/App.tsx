@@ -15,9 +15,18 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  SelectChangeEvent
+  SelectChangeEvent,
+  IconButton,
+  useTheme,
+  ThemeProvider,
+  createTheme,
+  CssBaseline
 } from '@mui/material';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Brightness4, Brightness7 } from '@mui/icons-material';
+import Particles from "@tsparticles/react";
+import { Engine } from "@tsparticles/engine";
+import { loadFull } from "tsparticles";
 
 const { ipcRenderer } = window.require('electron');
 
@@ -25,15 +34,46 @@ const Alert = React.forwardRef<HTMLDivElement, any>(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
+const lightTheme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#2196f3',
+    },
+    secondary: {
+      main: '#f50057',
+    },
+    background: {
+      default: '#f5f5f5',
+      paper: '#ffffff',
+    },
+  },
+});
+
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
+    primary: {
+      main: '#90caf9',
+    },
+    secondary: {
+      main: '#f48fb1',
+    },
+    background: {
+      default: '#121212',
+      paper: '#1e1e1e',
+    },
   },
 });
 
 function LoadingScreen({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen bg-gray-900 text-white flex items-center justify-center"
+    >
       <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
         <CircularProgress size={60} />
         <Typography variant="h6" className="text-blue-400">
@@ -43,13 +83,18 @@ function LoadingScreen({ onRetry }: { onRetry: () => void }) {
           Cela peut prendre quelques secondes
         </Typography>
       </Box>
-    </div>
+    </motion.div>
   );
 }
 
 function ErrorScreen({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen bg-gray-900 text-white flex items-center justify-center"
+    >
       <Box display="flex" flexDirection="column" alignItems="center" gap={4}>
         <Typography variant="h6" className="text-red-400">
           Erreur lors du chargement des applications
@@ -65,7 +110,7 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
           Réessayer
         </Button>
       </Box>
-    </div>
+    </motion.div>
   );
 }
 
@@ -74,6 +119,7 @@ function App() {
   const [hasError, setHasError] = useState(false);
   const [applications, setApplications] = useState<Array<{ id: string, name: string }>>([]);
   const [selectedApp, setSelectedApp] = useState<string>('');
+  const [darkMode, setDarkMode] = useState(true);
   const [presence, setPresence] = useState({
     details: '',
     state: '',
@@ -89,6 +135,12 @@ function App() {
     message: '',
     severity: 'success' as 'success' | 'error'
   });
+
+  const theme = darkMode ? darkTheme : lightTheme;
+
+  const particlesInit = async (engine: Engine) => {
+    await loadFull(engine);
+  };
 
   const loadApplications = async () => {
     try {
@@ -167,6 +219,10 @@ function App() {
     setNotification(prev => ({ ...prev, open: false }));
   };
 
+  const toggleTheme = () => {
+    setDarkMode(!darkMode);
+  };
+
   if (isLoading) {
     return <LoadingScreen onRetry={loadApplications} />;
   }
@@ -176,146 +232,217 @@ function App() {
   }
 
   return (
-    <ThemeProvider theme={darkTheme}>
-      <div className="min-h-screen bg-gray-900 text-white p-8">
-        <div className="max-w-4xl mx-auto">
-          <Typography variant="h3" className="mb-8 text-center text-blue-400">
-            Richify
-          </Typography>
-          
-          <Card className="bg-gray-800">
-            <CardContent>
-              <div className="space-y-6">
-                <FormControl fullWidth>
-                  <InputLabel id="app-select-label">Application</InputLabel>
-                  <Select
-                    labelId="app-select-label"
-                    value={selectedApp}
-                    onChange={handleAppSelect}
-                    label="Application"
-                    disabled={isLoading}
-                    displayEmpty
-                  >
-                    <MenuItem key="empty-select" value="" disabled>
-                      <em>Sélectionnez une application</em>
-                    </MenuItem>
-                    {applications.map((app) => (
-                      <MenuItem key={app.id} value={app.id}>
-                        {app.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {isLoading && (
-                    <Box display="flex" alignItems="center" gap={1} mt={1}>
-                      <CircularProgress size={20} />
-                      <Typography variant="body2" className="text-gray-400">
-                        Chargement des applications...
-                      </Typography>
-                    </Box>
-                  )}
-                </FormControl>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <div className="min-h-screen relative">
+        <Particles
+          id="tsparticles"
+          init={particlesInit}
+          options={{
+            background: {
+              color: {
+                value: darkMode ? "#121212" : "#f5f5f5",
+              },
+            },
+            fpsLimit: 60,
+            particles: {
+              color: {
+                value: darkMode ? "#ffffff" : "#000000",
+              },
+              links: {
+                color: darkMode ? "#ffffff" : "#000000",
+                distance: 150,
+                enable: true,
+                opacity: 0.2,
+                width: 1,
+              },
+              move: {
+                enable: true,
+                outModes: {
+                  default: "bounce",
+                },
+                random: false,
+                speed: 1,
+                straight: false,
+              },
+              number: {
+                density: {
+                  enable: true,
+                  area: 800,
+                },
+                value: 80,
+              },
+              opacity: {
+                value: 0.3,
+              },
+              shape: {
+                type: "circle",
+              },
+              size: {
+                value: { min: 1, max: 3 },
+              },
+            },
+            detectRetina: true,
+          }}
+        />
+        
+        <div className="relative z-10 p-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Typography variant="h3" className="text-center text-blue-400">
+                  Richify
+                </Typography>
+              </motion.div>
+              <IconButton onClick={toggleTheme} color="inherit">
+                {darkMode ? <Brightness7 /> : <Brightness4 />}
+              </IconButton>
+            </div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card className="bg-opacity-90 backdrop-blur-sm">
+                <CardContent>
+                  <div className="space-y-6">
+                    <FormControl fullWidth>
+                      <InputLabel id="app-select-label">Application</InputLabel>
+                      <Select
+                        labelId="app-select-label"
+                        value={selectedApp}
+                        onChange={handleAppSelect}
+                        label="Application"
+                        disabled={isLoading}
+                        displayEmpty
+                      >
+                        <MenuItem key="empty-select" value="" disabled>
+                          <em>Sélectionnez une application</em>
+                        </MenuItem>
+                        {applications.map((app) => (
+                          <MenuItem key={app.id} value={app.id}>
+                            {app.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {isLoading && (
+                        <Box display="flex" alignItems="center" gap={1} mt={1}>
+                          <CircularProgress size={20} />
+                          <Typography variant="body2" className="text-gray-400">
+                            Chargement des applications...
+                          </Typography>
+                        </Box>
+                      )}
+                    </FormControl>
 
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={presence.enabled}
-                      onChange={handleChange}
-                      name="enabled"
-                      color="primary"
-                      disabled={!selectedApp || isLoading}
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={presence.enabled}
+                          onChange={handleChange}
+                          name="enabled"
+                          color="primary"
+                          disabled={!selectedApp || isLoading}
+                        />
+                      }
+                      label="Activer Rich Presence"
                     />
-                  }
-                  label="Activer Rich Presence"
-                />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <TextField
-                    label="Détails"
-                    name="details"
-                    value={presence.details}
-                    onChange={handleChange}
-                    fullWidth
-                    variant="outlined"
-                    disabled={!selectedApp || isLoading}
-                  />
-                  <TextField
-                    label="État"
-                    name="state"
-                    value={presence.state}
-                    onChange={handleChange}
-                    fullWidth
-                    variant="outlined"
-                    disabled={!selectedApp || isLoading}
-                  />
-                  <TextField
-                    label="Clé de la grande image"
-                    name="largeImageKey"
-                    value={presence.largeImageKey}
-                    onChange={handleChange}
-                    fullWidth
-                    variant="outlined"
-                    disabled={!selectedApp || isLoading}
-                  />
-                  <TextField
-                    label="Texte de la grande image"
-                    name="largeImageText"
-                    value={presence.largeImageText}
-                    onChange={handleChange}
-                    fullWidth
-                    variant="outlined"
-                    disabled={!selectedApp || isLoading}
-                  />
-                  <TextField
-                    label="Clé de la petite image"
-                    name="smallImageKey"
-                    value={presence.smallImageKey}
-                    onChange={handleChange}
-                    fullWidth
-                    variant="outlined"
-                    disabled={!selectedApp || isLoading}
-                  />
-                  <TextField
-                    label="Texte de la petite image"
-                    name="smallImageText"
-                    value={presence.smallImageText}
-                    onChange={handleChange}
-                    fullWidth
-                    variant="outlined"
-                    disabled={!selectedApp || isLoading}
-                  />
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <TextField
+                        label="Détails"
+                        name="details"
+                        value={presence.details}
+                        onChange={handleChange}
+                        fullWidth
+                        variant="outlined"
+                        disabled={!selectedApp || isLoading}
+                      />
+                      <TextField
+                        label="État"
+                        name="state"
+                        value={presence.state}
+                        onChange={handleChange}
+                        fullWidth
+                        variant="outlined"
+                        disabled={!selectedApp || isLoading}
+                      />
+                      <TextField
+                        label="Clé de la grande image"
+                        name="largeImageKey"
+                        value={presence.largeImageKey}
+                        onChange={handleChange}
+                        fullWidth
+                        variant="outlined"
+                        disabled={!selectedApp || isLoading}
+                      />
+                      <TextField
+                        label="Texte de la grande image"
+                        name="largeImageText"
+                        value={presence.largeImageText}
+                        onChange={handleChange}
+                        fullWidth
+                        variant="outlined"
+                        disabled={!selectedApp || isLoading}
+                      />
+                      <TextField
+                        label="Clé de la petite image"
+                        name="smallImageKey"
+                        value={presence.smallImageKey}
+                        onChange={handleChange}
+                        fullWidth
+                        variant="outlined"
+                        disabled={!selectedApp || isLoading}
+                      />
+                      <TextField
+                        label="Texte de la petite image"
+                        name="smallImageText"
+                        value={presence.smallImageText}
+                        onChange={handleChange}
+                        fullWidth
+                        variant="outlined"
+                        disabled={!selectedApp || isLoading}
+                      />
+                    </div>
 
-                <div className="flex justify-end mt-4">
-                  <Button 
-                    variant="contained" 
-                    color="primary"
-                    onClick={handleSubmit}
-                    disabled={!presence.enabled || !selectedApp || isLoading}
-                  >
-                    Mettre à jour la présence
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                    <div className="flex justify-end mt-4">
+                      <Button 
+                        variant="contained" 
+                        color="primary"
+                        onClick={handleSubmit}
+                        disabled={!presence.enabled || !selectedApp || isLoading}
+                      >
+                        Mettre à jour la présence
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
 
-        <Snackbar 
-          open={notification.open} 
-          autoHideDuration={6000} 
-          onClose={handleCloseNotification}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        >
-          <Alert 
-            onClose={handleCloseNotification} 
-            severity={notification.severity}
+          <Snackbar 
+            open={notification.open} 
+            autoHideDuration={6000} 
+            onClose={handleCloseNotification}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
           >
-            {notification.message}
-          </Alert>
-        </Snackbar>
+            <Alert 
+              onClose={handleCloseNotification} 
+              severity={notification.severity}
+            >
+              {notification.message}
+            </Alert>
+          </Snackbar>
+        </div>
       </div>
     </ThemeProvider>
   );
 }
 
-export default App; 
+export default App;
