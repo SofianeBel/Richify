@@ -5,8 +5,8 @@
   "description": "Application permettant de personnaliser la Rich Presence Discord pour n'importe quelle application",
   "type": "commonjs",
   "scripts": {
-    "clean": "rimraf dist-electron node_modules",
-    "dev": "vite",
+    "clean": "rimraf dist dist-electron node_modules",
+    "dev": "vite build && vite dev",
     "start": "electron-vite preview",
     "build": "tsc && vite build && electron-builder",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
@@ -49,5 +49,25 @@
     "vite-plugin-electron": "^0.28.6",
     "vite-plugin-electron-renderer": "^0.14.6"
   },
-  "main": "dist-electron/main.js"
+  "main": "dist-electron/main/index.js",
+  "build": {
+    "appId": "com.richify.app",
+    "productName": "Richify",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
 }

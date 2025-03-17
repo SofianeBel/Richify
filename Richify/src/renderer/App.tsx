@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Button, 
   TextField, 
@@ -25,10 +25,15 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brightness4, Brightness7 } from '@mui/icons-material';
 import Particles from "@tsparticles/react";
-import { Engine } from "@tsparticles/engine";
+import { Engine, Container } from "@tsparticles/engine";
 import { loadFull } from "tsparticles";
 
-const { ipcRenderer } = window.require('electron');
+// Vérification de sécurité pour l'accès à window.electron
+if (!window.electron) {
+  console.error('window.electron is not defined. Make sure the preload script is properly configured.');
+}
+
+const { ipcRenderer } = window.electron || { ipcRenderer: null };
 
 const Alert = React.forwardRef<HTMLDivElement, any>(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -138,11 +143,94 @@ function App() {
 
   const theme = darkMode ? darkTheme : lightTheme;
 
-  const particlesInit = async (engine: Engine) => {
+  const particlesInit = useCallback(async (engine: Engine) => {
     await loadFull(engine);
+  }, []);
+
+  const particlesLoaded = useCallback(async (container: Container | undefined) => {
+    console.log(container);
+  }, []);
+
+  const particlesConfig = {
+    fullScreen: {
+      enable: false,
+      zIndex: 0
+    },
+    background: {
+      color: {
+        value: darkMode ? "#121212" : "#f5f5f5",
+      },
+    },
+    fpsLimit: 60,
+    particles: {
+      color: {
+        value: darkMode ? "#ffffff" : "#000000",
+      },
+      links: {
+        color: darkMode ? "#ffffff" : "#000000",
+        distance: 150,
+        enable: true,
+        opacity: 0.2,
+        width: 1,
+      },
+      move: {
+        direction: "none",
+        enable: true,
+        outModes: {
+          default: "bounce",
+        },
+        random: true,
+        speed: 2,
+        straight: false,
+      },
+      number: {
+        density: {
+          enable: true,
+          area: 800,
+        },
+        value: 100,
+      },
+      opacity: {
+        value: 0.5,
+      },
+      shape: {
+        type: "circle",
+      },
+      size: {
+        value: { min: 1, max: 5 },
+      },
+    },
+    detectRetina: true,
+    interactivity: {
+      events: {
+        onHover: {
+          enable: true,
+          mode: "repulse",
+        },
+        onClick: {
+          enable: true,
+          mode: "push",
+        },
+        resize: true,
+      },
+      modes: {
+        repulse: {
+          distance: 100,
+          duration: 0.4,
+        },
+        push: {
+          quantity: 4,
+        },
+      },
+    },
   };
 
   const loadApplications = async () => {
+    if (!ipcRenderer) {
+      console.error('ipcRenderer is not available');
+      return;
+    }
+
     try {
       const response = await ipcRenderer.invoke('GET_RUNNING_APPS');
       if (response.success && response.data) {
@@ -156,6 +244,11 @@ function App() {
   };
 
   useEffect(() => {
+    if (!ipcRenderer) {
+      console.error('ipcRenderer is not available');
+      return;
+    }
+
     const handlePresenceUpdate = (_: any, response: { success: boolean, error?: string }) => {
       if (response.success) {
         setNotification({
@@ -184,6 +277,11 @@ function App() {
   }, []);
 
   const handleAppSelect = (event: SelectChangeEvent<string>) => {
+    if (!ipcRenderer) {
+      console.error('ipcRenderer is not available');
+      return;
+    }
+
     const appId = event.target.value;
     setSelectedApp(appId);
     setPresence(prev => ({
@@ -198,6 +296,11 @@ function App() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!ipcRenderer) {
+      console.error('ipcRenderer is not available');
+      return;
+    }
+
     const { name, value, checked } = e.target;
     setPresence(prev => ({
       ...prev,
@@ -210,6 +313,11 @@ function App() {
   };
 
   const handleSubmit = () => {
+    if (!ipcRenderer) {
+      console.error('ipcRenderer is not available');
+      return;
+    }
+
     if (presence.enabled) {
       ipcRenderer.send('UPDATE_PRESENCE', presence);
     }
@@ -235,56 +343,14 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <div className="min-h-screen relative">
-        <Particles
-          id="tsparticles"
-          init={particlesInit}
-          options={{
-            background: {
-              color: {
-                value: darkMode ? "#121212" : "#f5f5f5",
-              },
-            },
-            fpsLimit: 60,
-            particles: {
-              color: {
-                value: darkMode ? "#ffffff" : "#000000",
-              },
-              links: {
-                color: darkMode ? "#ffffff" : "#000000",
-                distance: 150,
-                enable: true,
-                opacity: 0.2,
-                width: 1,
-              },
-              move: {
-                enable: true,
-                outModes: {
-                  default: "bounce",
-                },
-                random: false,
-                speed: 1,
-                straight: false,
-              },
-              number: {
-                density: {
-                  enable: true,
-                  area: 800,
-                },
-                value: 80,
-              },
-              opacity: {
-                value: 0.3,
-              },
-              shape: {
-                type: "circle",
-              },
-              size: {
-                value: { min: 1, max: 3 },
-              },
-            },
-            detectRetina: true,
-          }}
-        />
+        <div className="absolute inset-0">
+          <Particles
+            id="tsparticles"
+            init={particlesInit}
+            loaded={particlesLoaded}
+            options={particlesConfig}
+          />
+        </div>
         
         <div className="relative z-10 p-8">
           <div className="max-w-4xl mx-auto">

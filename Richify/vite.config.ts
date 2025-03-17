@@ -2,18 +2,29 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import electron from 'vite-plugin-electron';
 import renderer from 'vite-plugin-electron-renderer';
-import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
-import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill';
+import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [
     react(),
     electron([
       {
-        entry: 'src/main/main.ts',
+        entry: 'src/main/index.ts',
+        vite: {
+          build: {
+            outDir: 'dist-electron/main',
+            sourcemap: true,
+          },
+        },
       },
       {
-        entry: 'src/preload/preload.ts',
+        entry: 'src/preload/index.ts',
+        vite: {
+          build: {
+            outDir: 'dist-electron/preload',
+            sourcemap: true,
+          },
+        },
         onstart(options) {
           options.reload();
         },
@@ -21,15 +32,9 @@ export default defineConfig({
     ]),
     renderer(),
   ],
-  optimizeDeps: {
-    esbuildOptions: {
-      plugins: [
-        NodeGlobalsPolyfillPlugin({
-          process: true,
-          buffer: true,
-        }),
-        NodeModulesPolyfillPlugin(),
-      ],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
     },
   },
   build: {
