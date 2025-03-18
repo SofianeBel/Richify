@@ -28,7 +28,8 @@ import {
   Apps as AppsIcon,
   Settings as SettingsIcon,
   Refresh as RefreshIcon,
-  Save as SaveIcon
+  Save as SaveIcon,
+  PlayArrow as PlayArrowIcon
 } from '@mui/icons-material';
 import { ThemeProvider, useThemeMode } from './theme/ThemeProvider';
 import ErrorDisplay from './components/ErrorDisplay';
@@ -50,6 +51,7 @@ interface Application {
   name: string;
   processId: number;
   windowTitle: string;
+  iconUrl?: string;
 }
 
 function AppContent() {
@@ -120,13 +122,15 @@ function AppContent() {
     try {
       setLoading(true);
       setError(null);
-      const response = await window.electron.ipcRenderer.invoke('GET_RUNNING_APPS');
+      // Utiliser la nouvelle méthode pour récupérer les applications avec icônes
+      const response = await window.electron.ipcRenderer.invoke('GET_RUNNING_APPS_WITH_ICONS');
       if (response.success && Array.isArray(response.data)) {
         // Convertir les données dans le format attendu
-        const apps: Application[] = response.data.map((app: IpcApplication) => ({
+        const apps: Application[] = response.data.map((app: any) => ({
           name: app.name,
           processId: parseInt(app.id),
-          windowTitle: app.name
+          windowTitle: app.name,
+          iconUrl: app.iconUrl
         }));
         setApplications(apps);
       } else {
@@ -141,8 +145,18 @@ function AppContent() {
 
   const handleUpdatePresence = (presenceData: any) => {
     if (selectedApp) {
+      // Si l'application a une icône, l'utiliser pour largeImageKey s'il n'y en a pas déjà une définie
+      let updatedPresenceData = { ...presenceData };
+      
+      if (selectedApp.iconUrl && !presenceData.largeImageKey) {
+        updatedPresenceData = {
+          ...updatedPresenceData,
+          largeImageKey: selectedApp.iconUrl
+        };
+      }
+      
       window.electron.ipcRenderer.send('UPDATE_PRESENCE', {
-        ...presenceData,
+        ...updatedPresenceData,
         applicationId: selectedApp.processId,
         applicationName: selectedApp.name
       });
@@ -302,6 +316,17 @@ function AppContent() {
                       <SaveIcon />
                     </Fab>
                   </Tooltip>
+                  
+                  <Tooltip title="Lancer Rich Presence">
+                    <Fab
+                      color="secondary"
+                      size="medium"
+                      onClick={() => handleUpdatePresence(presenceConfig)}
+                      disabled={!selectedApp || !discordConnected}
+                    >
+                      <PlayArrowIcon />
+                    </Fab>
+                  </Tooltip>
                 </Box>
               </Box>
             </Grid>
@@ -338,7 +363,7 @@ function AppContent() {
         onClose={() => setShowProfileManager(false)}
         onSelectProfile={handleProfileSelect}
         currentConfig={presenceConfig}
-        currentApplication={selectedApp}
+        currentApplication={selectedApp ? selectedApp : undefined}
       />
     </>
   );

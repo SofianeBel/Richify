@@ -17,6 +17,12 @@ interface PresenceData {
   applicationName?: string;
 }
 
+interface ErrorResponse {
+  code?: number;
+  message: string;
+  details?: string;
+}
+
 class DiscordManager {
   private client: Client | null = null;
   private clientId: string = '';
@@ -25,6 +31,9 @@ class DiscordManager {
   private currentActivity: any = null;
   private startTime: number;
   private currentPresence: PresenceData | null = null;
+  private connectionAttempts: number = 0;
+  private maxConnectionAttempts: number = 3;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
 
   constructor(mainWindow: BrowserWindow) {
     this.mainWindow = mainWindow;
@@ -41,11 +50,30 @@ class DiscordManager {
 
     this.clientId = clientId;
     this.client = new Client({ transport: 'ipc' });
+    this.connectionAttempts = 0;
 
     try {
       // Connexion à Discord
-      await this.client.login({ clientId });
+      await this.connect();
+    } catch (error) {
+      const errorResponse = this.formatError(error, 'Failed to connect to Discord');
+      console.error('Failed to connect to Discord:', errorResponse);
+      this.mainWindow?.webContents.send('DISCORD_ERROR', errorResponse);
+      throw error;
+    }
+  }
+
+  private async connect(): Promise<void> {
+    if (!this.client || !this.clientId) {
+      throw new Error('Client or Client ID not initialized');
+    }
+
+    this.connectionAttempts++;
+
+    try {
+      await this.client.login({ clientId: this.clientId });
       this.connected = true;
+      this.connectionAttempts = 0;
       console.log('Connected to Discord');
 
       // Gérer les événements
@@ -58,17 +86,57 @@ class DiscordManager {
         console.log('Discord RPC disconnected');
         this.connected = false;
         this.mainWindow?.webContents.send('DISCORD_DISCONNECTED');
+        
+        // Essayer de se reconnecter automatiquement
+        this.attemptReconnect();
       });
     } catch (error) {
-      console.error('Failed to connect to Discord:', error);
-      this.mainWindow?.webContents.send('DISCORD_ERROR', error);
-      throw error;
+      if (this.connectionAttempts < this.maxConnectionAttempts) {
+        console.log(`Connection attempt ${this.connectionAttempts} failed, retrying in 5 seconds...`);
+        
+        // Attendre avant de réessayer
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Réessayer de se connecter
+        return this.connect();
+      } else {
+        this.connected = false;
+        const errorResponse = this.formatError(error, 'Failed to connect after multiple attempts');
+        this.mainWindow?.webContents.send('DISCORD_ERROR', errorResponse);
+        throw new Error(`Failed to connect after ${this.maxConnectionAttempts} attempts: ${errorResponse.message}`);
+      }
     }
+  }
+
+  private attemptReconnect(): void {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+    }
+    
+    this.reconnectTimeout = setTimeout(async () => {
+      if (!this.connected && this.clientId) {
+        console.log('Attempting to reconnect to Discord...');
+        try {
+          this.client = new Client({ transport: 'ipc' });
+          await this.connect();
+          
+          // Si on a réussi à se reconnecter et qu'on avait une présence active,
+          // on la restaure
+          if (this.connected && this.currentPresence) {
+            await this.updatePresence(this.currentPresence);
+          }
+        } catch (error) {
+          console.error('Failed to reconnect:', error);
+        }
+      }
+    }, 10000); // Attendre 10 secondes avant de tenter de se reconnecter
   }
 
   async updatePresence(data: PresenceData): Promise<void> {
     if (!this.client || !this.connected) {
-      throw new Error('Discord client not connected');
+      const error = new Error('Discord client not connected');
+      this.mainWindow?.webContents.send('DISCORD_ERROR', this.formatError(error));
+      throw error;
     }
 
     try {
@@ -86,14 +154,28 @@ class DiscordManager {
 
       // Ajouter les images si spécifiées
       if (data.largeImageKey) {
-        presence.largeImageKey = data.largeImageKey;
+        // Vérifier si c'est une URL d'image directe (data URL ou http)
+        if (data.largeImageKey.startsWith('data:image/') || data.largeImageKey.startsWith('http')) {
+          presence.largeImageKey = data.largeImageKey;
+        } else {
+          // Utiliser comme clé d'asset Discord
+          presence.largeImageKey = data.largeImageKey;
+        }
+        
         if (data.largeImageText) {
           presence.largeImageText = data.largeImageText;
         }
       }
 
       if (data.smallImageKey) {
-        presence.smallImageKey = data.smallImageKey;
+        // Vérifier si c'est une URL d'image directe (data URL ou http)
+        if (data.smallImageKey.startsWith('data:image/') || data.smallImageKey.startsWith('http')) {
+          presence.smallImageKey = data.smallImageKey;
+        } else {
+          // Utiliser comme clé d'asset Discord
+          presence.smallImageKey = data.smallImageKey;
+        }
+        
         if (data.smallImageText) {
           presence.smallImageText = data.smallImageText;
         }
@@ -121,12 +203,65 @@ class DiscordManager {
       this.currentActivity = presence;
       console.log('Updated Discord presence:', presence);
     } catch (error) {
-      console.error('Failed to update presence:', error);
+      const errorResponse = this.formatError(error, 'Failed to update presence');
+      console.error('Failed to update presence:', errorResponse);
+      this.mainWindow?.webContents.send('DISCORD_ERROR', errorResponse);
+      
+      // Si l'erreur est liée à une déconnexion, essayer de se reconnecter
+      if (this.isDisconnectionError(error)) {
+        this.connected = false;
+        this.mainWindow?.webContents.send('DISCORD_DISCONNECTED');
+        this.attemptReconnect();
+      }
+      
       throw error;
     }
   }
 
+  private isDisconnectionError(error: any): boolean {
+    if (!error) return false;
+    
+    const errorMessage = error.message || String(error);
+    return (
+      errorMessage.includes('connection') ||
+      errorMessage.includes('disconnected') ||
+      errorMessage.includes('not connected')
+    );
+  }
+
+  private formatError(error: any, defaultMessage: string = 'Une erreur est survenue'): ErrorResponse {
+    if (!error) {
+      return { message: defaultMessage };
+    }
+    
+    let errorCode: number | undefined;
+    let errorMessage: string = defaultMessage;
+    let errorDetails: string | undefined;
+    
+    if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error instanceof Error) {
+      errorMessage = error.message || defaultMessage;
+      errorDetails = error.stack;
+    } else if (typeof error === 'object') {
+      errorCode = error.code;
+      errorMessage = error.message || defaultMessage;
+      errorDetails = error.details || error.stack;
+    }
+    
+    return {
+      code: errorCode,
+      message: errorMessage,
+      details: errorDetails
+    };
+  }
+
   async disconnect(): Promise<void> {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    
     if (this.client) {
       try {
         await this.client.clearActivity();
@@ -137,7 +272,7 @@ class DiscordManager {
         console.log('Disconnected from Discord');
       } catch (error) {
         console.error('Error disconnecting from Discord:', error);
-        throw error;
+        // Ne pas renvoyer l'erreur ici pour éviter de bloquer la fermeture
       }
     }
   }
@@ -163,6 +298,13 @@ export function setupDiscordIPC(ipcMain: Electron.IpcMain, discordManager: Disco
     } catch (error) {
       console.error('Error updating presence:', error);
     }
+  });
+  
+  ipcMain.handle('GET_DISCORD_STATUS', () => {
+    return {
+      connected: discordManager.isConnected(),
+      presence: discordManager.getCurrentPresence()
+    };
   });
 }
 

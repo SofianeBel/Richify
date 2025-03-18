@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Erreur - Richify</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #36393f;
+      color: #dcddde;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: 0 20px;
+      text-align: center;
+    }
+    
+    .error-container {
+      max-width: 500px;
+      background-color: #2f3136;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+    
+    h1 {
+      color: #ffffff;
+      margin-top: 0;
+    }
+    
+    p {
+      margin: 12px 0;
+      line-height: 1.5;
+    }
+    
+    .buttons {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+    
+    button {
+      background-color: #5865f2;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: #4752c4;
+    }
+    
+    button.secondary {
+      background-color: #4f545c;
+    }
+    
+    button.secondary:hover {
+      background-color: #686d73;
+    }
+    
+    .icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+      color: #ed4245;
+    }
+    
+    .tips {
+      margin-top: 24px;
+      background-color: #4f545c;
+      border-radius: 4px;
+      padding: 12px;
+      font-size: 14px;
+      text-align: left;
+    }
+    
+    .tips h3 {
+      margin-top: 0;
+    }
+    
+    .tips ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    
+    .tips li {
+      margin-bottom: 8px;
+    }
+    
+    .footer {
+      margin-top: 30px;
+      font-size: 12px;
+      color: #72767d;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <div class="icon">⚠️</div>
+    <h1>Oups ! Une erreur est survenue</h1>
+    <p>L'application Richify n'a pas pu se charger correctement. Cela peut être dû à un problème temporaire ou à une erreur système.</p>
+    
+    <div class="buttons">
+      <button onclick="window.location.reload()">Réessayer</button>
+      <button class="secondary" onclick="window.close()">Fermer l'application</button>
+    </div>
+    
+    <div class="tips">
+      <h3>Essayez les solutions suivantes :</h3>
+      <ul>
+        <li>Vérifiez votre connexion Internet si l'application nécessite un accès au réseau.</li>
+        <li>Redémarrez l'application complètement.</li>
+        <li>Vérifiez que Discord est en cours d'exécution sur votre ordinateur.</li>
+        <li>Assurez-vous que vous utilisez la dernière version de Richify.</li>
+        <li>Redémarrez votre ordinateur si le problème persiste.</li>
+      </ul>
+    </div>
+    
+    <div class="footer">
+      Richify v0.8.0 - Application de personnalisation de Rich Presence Discord
+    </div>
+  </div>
+
+  <script>
+    // Code pour permettre de relancer l'application
+    document.addEventListener('keydown', function(event) {
+      // Relancer si F5 ou Ctrl+R est pressé
+      if (event.key === 'F5' || (event.ctrlKey && event.key === 'r')) {
+        window.location.reload();
+      }
+    });
+  </script>
+</body>
+</html> 

@@ -11,7 +11,15 @@ contextBridge.exposeInMainWorld(
       send: (channel: string, ...args: any[]) => {
         console.log('Sending message:', channel, args);
         // whitelist channels
-        const validChannels = ['SELECT_APPLICATION', 'UPDATE_PRESENCE', 'DISCONNECT_RPC'];
+        const validChannels = [
+          'SELECT_APPLICATION', 
+          'UPDATE_PRESENCE', 
+          'DISCONNECT_RPC',
+          'OPEN_EXTERNAL_LINK',
+          'SHOW_APP_MENU',
+          'SHOW_ABOUT',
+          'UPDATE_SETTINGS'
+        ];
         if (validChannels.includes(channel)) {
           ipcRenderer.send(channel, ...args);
         }
@@ -24,7 +32,9 @@ contextBridge.exposeInMainWorld(
           'RPC_DISCONNECTED',
           'DISCORD_CONNECTED',
           'DISCORD_DISCONNECTED',
-          'DISCORD_ERROR'
+          'DISCORD_ERROR',
+          'APP_UPDATE_AVAILABLE',
+          'APP_UPDATE_DOWNLOADED'
         ];
         if (validChannels.includes(channel)) {
           ipcRenderer.on(channel, (event, ...args) => {
@@ -40,7 +50,9 @@ contextBridge.exposeInMainWorld(
           'RPC_DISCONNECTED',
           'DISCORD_CONNECTED',
           'DISCORD_DISCONNECTED',
-          'DISCORD_ERROR'
+          'DISCORD_ERROR',
+          'APP_UPDATE_AVAILABLE',
+          'APP_UPDATE_DOWNLOADED'
         ];
         if (validChannels.includes(channel)) {
           ipcRenderer.removeListener(channel, func);
@@ -49,7 +61,15 @@ contextBridge.exposeInMainWorld(
       invoke: (channel: string, ...args: any[]) => {
         console.log('Invoking:', channel, args);
         // whitelist channels
-        const validChannels = ['GET_RUNNING_APPS', 'INITIALIZE_DISCORD'];
+        const validChannels = [
+          'GET_RUNNING_APPS', 
+          'INITIALIZE_DISCORD', 
+          'GET_RUNNING_APPS_WITH_ICONS', 
+          'GET_APP_ICON',
+          'GET_DISCORD_STATUS',
+          'GET_APP_VERSION',
+          'CHECK_FOR_UPDATES'
+        ];
         if (validChannels.includes(channel)) {
           return ipcRenderer.invoke(channel, ...args);
         }
