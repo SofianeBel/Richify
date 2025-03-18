@@ -201,9 +201,7 @@ export default function PresencePreview({
               {largeImageKey ? (
                 <Avatar
                   alt={largeImageText || 'Application'}
-                  src={largeImageKey.startsWith('data:') || largeImageKey.startsWith('http') 
-                      ? largeImageKey 
-                      : `./assets/images/${largeImageKey}.png`}
+                  src={largeImageKey}
                   sx={{ 
                     width: 60, 
                     height: 60, 
@@ -232,9 +230,7 @@ export default function PresencePreview({
               {smallImageKey && (
                 <Avatar
                   alt={smallImageText || 'Small Image'}
-                  src={smallImageKey.startsWith('data:') || smallImageKey.startsWith('http') 
-                      ? smallImageKey 
-                      : `./assets/images/${smallImageKey}.png`}
+                  src={smallImageKey}
                   sx={{
                     width: 20,
                     height: 20,

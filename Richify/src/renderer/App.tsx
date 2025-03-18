@@ -88,12 +88,37 @@ function AppContent() {
         return;
       }
 
+      // Vérifier que Discord est en cours d'exécution
+      const discordCheck = await window.electron.ipcRenderer.invoke('CHECK_DISCORD_RUNNING');
+      if (!discordCheck.success || !discordCheck.isRunning) {
+        const errorMsg = 'Discord n\'est pas en cours d\'exécution. Veuillez lancer Discord avant d\'utiliser Richify.';
+        console.error(errorMsg);
+        setError(errorMsg);
+        return;
+      }
+
+      console.log('Discord est en cours d\'exécution, tentative de connexion...');
+      
+      // Tenter la connexion au client Discord RPC
       const response = await window.electron.ipcRenderer.invoke('INITIALIZE_DISCORD', clientId);
       if (!response.success) {
         throw new Error(response.error || 'Échec de la connexion à Discord');
       }
+      
+      console.log('Connexion à Discord réussie');
       setDiscordConnected(true);
+      
+      // Vérifier l'état de la connexion après un court délai pour s'assurer qu'elle est stable
+      setTimeout(async () => {
+        const status = await window.electron.ipcRenderer.invoke('GET_DISCORD_STATUS');
+        if (!status.connected) {
+          console.warn('La connexion à Discord a été perdue peu après l\'initialisation');
+          setDiscordConnected(false);
+          setError('La connexion à Discord a été interrompue. Veuillez vérifier que Discord est correctement configuré.');
+        }
+      }, 2000);
     } catch (err) {
+      console.error('Erreur lors de l\'initialisation de Discord:', err);
       setError(err instanceof Error ? err.message : 'Erreur de connexion à Discord');
     }
   };
@@ -337,8 +362,8 @@ function AppContent() {
       <ErrorDisplay
         open={!!error}
         onClose={() => setError(null)}
-        error={error || ''}
-        onRetry={fetchApplications}
+        error={error}
+        onSettings={() => setShowSettings(true)}
       />
 
       <Tutorial

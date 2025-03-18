@@ -1,7 +1,7 @@
 {
   "name": "richify",
   "private": true,
-  "version": "0.8.0",
+  "version": "1.0.0",
   "description": "Application permettant de personnaliser la Rich Presence Discord pour n'importe quelle application",
   "type": "commonjs",
   "scripts": {
@@ -21,6 +21,7 @@
     "bufferutil": "^4.0.9",
     "date-fns": "^4.1.0",
     "discord-rpc": "^4.0.1",
+    "node-fetch": "^2.6.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "utf-8-validate": "^5.0.10",
@@ -31,6 +32,7 @@
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
     "@types/discord-rpc": "^4.0.9",
+    "@types/node-fetch": "^2.6.4",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "@typescript-eslint/eslint-plugin": "^7.1.1",

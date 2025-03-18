@@ -4,6 +4,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import DiscordManager, { setupDiscordIPC } from './discord';
 import { getRunningApplications, getRunningApplicationsWithIcons, getApplicationIcon } from './applications';
+import { uploadImageToImgur } from './services/image-upload';
 import path from 'path';
 
 const execAsync = promisify(exec);
@@ -300,16 +301,74 @@ function setupIpcHandlers() {
     };
   });
 
-  // Gestionnaire pour obtenir le statut de Discord - Ce gestionnaire est implémenté dans discord.ts
-  // mais nous l'exposons ici pour être complet
-  ipcMain.handle('GET_DISCORD_STATUS', () => {
-    if (!discordManager) {
-      return { connected: false, presence: null };
+  // Ajout d'un handler pour vérifier si Discord est lancé sur le système
+  ipcMain.handle('CHECK_DISCORD_RUNNING', async () => {
+    try {
+      // Tentative de détection de Discord en fonction du système d'exploitation
+      let isRunning = false;
+      
+      if (process.platform === 'win32') {
+        // Windows - recherche du processus Discord
+        const { stdout } = await execAsync('tasklist /FI "IMAGENAME eq Discord.exe" /FO CSV /NH');
+        isRunning = stdout.toLowerCase().includes('discord.exe');
+        
+        // Vérifier aussi Discord PTB et Canary si la version standard n'est pas trouvée
+        if (!isRunning) {
+          const { stdout: stdoutPTB } = await execAsync('tasklist /FI "IMAGENAME eq DiscordPTB.exe" /FO CSV /NH');
+          const { stdout: stdoutCanary } = await execAsync('tasklist /FI "IMAGENAME eq DiscordCanary.exe" /FO CSV /NH');
+          isRunning = stdoutPTB.toLowerCase().includes('discordptb.exe') || 
+                      stdoutCanary.toLowerCase().includes('discordcanary.exe');
+        }
+      } else if (process.platform === 'darwin') {
+        // macOS - recherche du processus Discord
+        const { stdout } = await execAsync('ps -ax | grep -i [d]iscord');
+        isRunning = stdout.length > 0;
+      } else if (process.platform === 'linux') {
+        // Linux - recherche du processus Discord
+        const { stdout } = await execAsync('ps -A | grep -i [d]iscord');
+        isRunning = stdout.length > 0;
+      }
+      
+      return { 
+        success: true, 
+        isRunning,
+        platform: process.platform
+      };
+    } catch (error) {
+      console.error('Error checking if Discord is running:', error);
+      return { 
+        success: false, 
+        isRunning: false,
+        error: (error as Error).message 
+      };
     }
-    return {
-      connected: discordManager.isConnected(),
-      presence: discordManager.getCurrentPresence()
-    };
+  });
+
+  // Gestionnaire pour l'upload d'images
+  ipcMain.handle('UPLOAD_IMAGE', async (_event, imageData: string) => {
+    try {
+      console.log('Demande d\'upload d\'image reçue...');
+      const result = await uploadImageToImgur(imageData);
+      if (result.success) {
+        console.log('Image uploadée avec succès');
+        return { 
+          success: true, 
+          url: result.url 
+        };
+      } else {
+        console.error('Échec de l\'upload d\'image:', result.error);
+        return { 
+          success: false, 
+          error: result.error || 'Échec de l\'upload d\'image' 
+        };
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'upload d\'image:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Erreur inconnue' 
+      };
+    }
   });
 }
 

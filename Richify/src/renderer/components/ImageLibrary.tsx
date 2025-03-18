@@ -114,28 +114,41 @@ export default function ImageLibrary({ open, onClose, onSelect, type }: ImageLib
         return;
       }
       
-      // Générer un nom de fichier unique
-      const fileName = file.name.replace(/\.[^/.]+$/, '');
-      const uniqueKey = `custom-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      // Montrer un message de chargement
+      setSnackbarMessage('Traitement de l\'image en cours...');
+      setSnackbarOpen(true);
       
-      // Convertir l'image en data URL
+      // Convertir l'image en data URL pour l'envoyer au processus principal
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const newImage: Image = {
-          key: uniqueKey,
-          url: reader.result as string,
-          name: fileName,
-          category: 'Custom'
-        };
-        
-        const updatedImages = [...images, newImage];
-        setImages(updatedImages);
-        saveImages(updatedImages);
-        
-        setSnackbarMessage('Image ajoutée avec succès !');
-        setSnackbarOpen(true);
+      
+      // Utiliser une promesse pour attendre que le FileReader termine
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      
+      // Uploader l'image via IPC
+      const uploadResult = await window.electron.ipcRenderer.invoke('UPLOAD_IMAGE', dataUrl);
+      
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Échec de l\'upload');
+      }
+      
+      // Créer une entrée d'image avec l'URL retournée
+      const newImage: Image = {
+        key: `custom-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        url: uploadResult.url,
+        name: file.name.replace(/\.[^/.]+$/, ''),
+        category: 'Custom'
       };
-      reader.readAsDataURL(file);
+      
+      const updatedImages = [...images, newImage];
+      setImages(updatedImages);
+      saveImages(updatedImages);
+      
+      setSnackbarMessage('Image ajoutée avec succès !');
+      setSnackbarOpen(true);
     } catch (error) {
       console.error('Error processing image file:', error);
       setSnackbarMessage('Erreur lors du traitement de l\'image.');
@@ -180,7 +193,8 @@ export default function ImageLibrary({ open, onClose, onSelect, type }: ImageLib
     return url.startsWith('http') || url.startsWith('data:image/');
   };
 
-  const handleUrlImageAdd = () => {
+  // Gestionnaire pour l'ajout d'image par URL
+  const handleUrlImageAdd = async () => {
     if (!imageUrl) {
       setUrlError('Veuillez entrer une URL');
       return;
@@ -191,25 +205,42 @@ export default function ImageLibrary({ open, onClose, onSelect, type }: ImageLib
       return;
     }
 
-    // Créer une nouvelle image à partir de l'URL
-    const newImage: Image = {
-      key: `url-${Date.now()}`,
-      url: imageUrl,
-      name: imageUrlName || `URL Image ${images.filter(img => img.category === 'URL').length + 1}`,
-      category: 'URL'
-    };
+    try {
+      // Montrer un message de chargement
+      setSnackbarMessage('Traitement de l\'URL en cours...');
+      setSnackbarOpen(true);
+      
+      // Pour les URL, on peut aussi passer par le service d'upload pour valider et potentiellement les héberger ailleurs
+      const uploadResult = await window.electron.ipcRenderer.invoke('UPLOAD_IMAGE', imageUrl);
+      
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Échec du traitement de l\'URL');
+      }
+      
+      // Créer une nouvelle image à partir de l'URL
+      const newImage: Image = {
+        key: `url-${Date.now()}`,
+        url: uploadResult.url,
+        name: imageUrlName || `URL Image ${images.filter(img => img.category === 'URL').length + 1}`,
+        category: 'URL'
+      };
 
-    const updatedImages = [...images, newImage];
-    setImages(updatedImages);
-    saveImages(updatedImages);
-    
-    // Réinitialiser les champs
-    setImageUrl('');
-    setImageUrlName('');
-    setUrlError('');
-    
-    setSnackbarMessage('Image URL ajoutée avec succès !');
-    setSnackbarOpen(true);
+      const updatedImages = [...images, newImage];
+      setImages(updatedImages);
+      saveImages(updatedImages);
+      
+      // Réinitialiser les champs
+      setImageUrl('');
+      setImageUrlName('');
+      setUrlError('');
+      
+      setSnackbarMessage('Image URL ajoutée avec succès !');
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error('Erreur lors du traitement de l\'URL:', error);
+      setSnackbarMessage('Erreur lors du traitement de l\'URL.');
+      setSnackbarOpen(true);
+    }
   };
 
   // Supprimer une image

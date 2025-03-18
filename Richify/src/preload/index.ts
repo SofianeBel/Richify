@@ -68,7 +68,9 @@ contextBridge.exposeInMainWorld(
           'GET_APP_ICON',
           'GET_DISCORD_STATUS',
           'GET_APP_VERSION',
-          'CHECK_FOR_UPDATES'
+          'CHECK_FOR_UPDATES',
+          'CHECK_DISCORD_RUNNING',
+          'UPLOAD_IMAGE'
         ];
         if (validChannels.includes(channel)) {
           return ipcRenderer.invoke(channel, ...args);
